@@ -281,23 +281,23 @@
             <div class="separator"></div>
 
             <div class="control-group">
-                <h3 class="control-label">Syphon Streaming</h3>
-                
+                <h3 class="control-label">WebSocket Streaming</h3>
+
                 <label style="display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;">
-                    <input type="checkbox" id="enableSyphon" style="margin-right: 8px;">
+                    <input type="checkbox" id="enableWebSocket" style="margin-right: 8px;">
                     <span style="font-size: 12px;">Enable Streaming</span>
                 </label>
 
-                <label class="control-label">Server: <span class="control-value" id="syphonStatus">Offline</span></label>
-                <input type="text" id="syphonUrl" placeholder="ws://localhost:8080" style="width: 100%; padding: 8px; background: var(--color-bg-primary); border: 1px solid var(--color-grid); border-radius: 6px; color: var(--color-text-primary); margin-bottom: 12px; font-size: 11px;">
+                <label class="control-label">Server: <span class="control-value" id="websocketStatus">Offline</span></label>
+                <input type="text" id="websocketUrl" placeholder="ws://localhost:8080" style="width: 100%; padding: 8px; background: var(--color-bg-primary); border: 1px solid var(--color-grid); border-radius: 6px; color: var(--color-text-primary); margin-bottom: 12px; font-size: 11px;">
 
-                <button onclick="engine.connectSyphon();" style="width: 100%; margin-bottom: 8px;">Connect</button>
-                <button onclick="engine.disconnectSyphon();" style="width: 100%;">Disconnect</button>
+                <button onclick="engine.connectWebSocket();" style="width: 100%; margin-bottom: 8px;">Connect</button>
+                <button onclick="engine.disconnectWebSocket();" style="width: 100%;">Disconnect</button>
 
                 <div style="margin-top: 12px; padding: 12px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 6px; font-size: 11px;">
-                    <div class="stat">Bitrate: <span id="syphonBitrate">0</span> kbps</div>
+                    <div class="stat">Bitrate: <span id="websocketBitrate">0</span> kbps</div>
                     <div class="stat">Frames Sent: <span id="framesSent">0</span></div>
-                    <div class="stat">Latency: <span id="syphonLatency">0</span> ms</div>
+                    <div class="stat">Latency: <span id="websocketLatency">0</span> ms</div>
                 </div>
             </div>
 
@@ -439,13 +439,13 @@
                 this.frameCount = 0;
                 this.fps = 60;
 
-                // Syphon streaming
-                this.syphonSocket = null;
-                this.syphonStreaming = false;
-                this.syphonFrameCount = 0;
-                this.syphonBytesSent = 0;
-                this.lastSyphonTime = Date.now();
-                this.syphonStreamingInterval = null;
+                // WebSocket streaming
+                this.websocketSocket = null;
+                this.websocketStreaming = false;
+                this.websocketFrameCount = 0;
+                this.websocketBytesSent = 0;
+                this.lastWebsocketTime = Date.now();
+                this.websocketStreamingInterval = null;
 
                 this.setupControls();
                 this.loadModel('cube');
@@ -659,71 +659,71 @@
                 }
             }
 
-            connectSyphon() {
-                const url = document.getElementById('syphonUrl').value || 'ws://localhost:8080';
-                
+            connectWebSocket() {
+                const url = document.getElementById('websocketUrl').value || 'ws://localhost:8080';
+
                 try {
-                    this.syphonSocket = new WebSocket(url);
-                    
-                    this.syphonSocket.onopen = () => {
-                        document.getElementById('syphonStatus').textContent = 'Connected';
-                        document.getElementById('syphonStatus').parentElement.style.color = '#10b981';
-                        this.syphonStreaming = true;
-                        this.startSyphonStream();
+                    this.websocketSocket = new WebSocket(url);
+
+                    this.websocketSocket.onopen = () => {
+                        document.getElementById('websocketStatus').textContent = 'Connected';
+                        document.getElementById('websocketStatus').parentElement.style.color = '#10b981';
+                        this.websocketStreaming = true;
+                        this.startWebSocketStream();
                     };
-                    
-                    this.syphonSocket.onclose = () => {
-                        document.getElementById('syphonStatus').textContent = 'Offline';
-                        document.getElementById('syphonStatus').parentElement.style.color = 'var(--color-accent)';
-                        this.syphonStreaming = false;
-                        if (this.syphonStreamingInterval) {
-                            clearInterval(this.syphonStreamingInterval);
+
+                    this.websocketSocket.onclose = () => {
+                        document.getElementById('websocketStatus').textContent = 'Offline';
+                        document.getElementById('websocketStatus').parentElement.style.color = 'var(--color-accent)';
+                        this.websocketStreaming = false;
+                        if (this.websocketStreamingInterval) {
+                            clearInterval(this.websocketStreamingInterval);
                         }
                     };
-                    
-                    this.syphonSocket.onerror = (error) => {
-                        console.error('Syphon connection error:', error);
-                        document.getElementById('syphonStatus').textContent = 'Error';
-                        document.getElementById('syphonStatus').parentElement.style.color = '#ef4444';
+
+                    this.websocketSocket.onerror = (error) => {
+                        console.error('WebSocket connection error:', error);
+                        document.getElementById('websocketStatus').textContent = 'Error';
+                        document.getElementById('websocketStatus').parentElement.style.color = '#ef4444';
                     };
                 } catch (error) {
                     alert('Failed to connect: ' + error.message);
                 }
             }
 
-            disconnectSyphon() {
-                if (this.syphonSocket) {
-                    this.syphonSocket.close();
-                    this.syphonStreaming = false;
+            disconnectWebSocket() {
+                if (this.websocketSocket) {
+                    this.websocketSocket.close();
+                    this.websocketStreaming = false;
                 }
             }
 
-            startSyphonStream() {
+            startWebSocketStream() {
                 // Stream canvas frames every 33ms (~30fps)
-                this.syphonStreamingInterval = setInterval(() => {
-                    if (this.syphonSocket && this.syphonSocket.readyState === WebSocket.OPEN) {
+                this.websocketStreamingInterval = setInterval(() => {
+                    if (this.websocketSocket && this.websocketSocket.readyState === WebSocket.OPEN) {
                         try {
                             const imageData = this.canvas.toDataURL('image/webp', 0.8);
-                            this.syphonSocket.send(imageData);
-                            
-                            this.syphonFrameCount++;
-                            this.syphonBytesSent += imageData.length;
+                            this.websocketSocket.send(imageData);
+
+                            this.websocketFrameCount++;
+                            this.websocketBytesSent += imageData.length;
 
                             // Update stats every second
                             const now = Date.now();
-                            if (now - this.lastSyphonTime >= 1000) {
-                                const bitrate = (this.syphonBytesSent * 8) / 1000; // kbps
+                            if (now - this.lastWebsocketTime >= 1000) {
+                                const bitrate = (this.websocketBytesSent * 8) / 1000; // kbps
                                 const latency = Math.random() * 20 + 10; // Simulated latency
-                                
-                                document.getElementById('syphonBitrate').textContent = bitrate.toFixed(1);
-                                document.getElementById('framesSent').textContent = this.syphonFrameCount;
-                                document.getElementById('syphonLatency').textContent = latency.toFixed(1);
 
-                                this.syphonBytesSent = 0;
-                                this.lastSyphonTime = now;
+                                document.getElementById('websocketBitrate').textContent = bitrate.toFixed(1);
+                                document.getElementById('framesSent').textContent = this.websocketFrameCount;
+                                document.getElementById('websocketLatency').textContent = latency.toFixed(1);
+
+                                this.websocketBytesSent = 0;
+                                this.lastWebsocketTime = now;
                             }
                         } catch (error) {
-                            console.error('Error sending Syphon frame:', error);
+                            console.error('Error sending WebSocket frame:', error);
                         }
                     }
                 }, 33);
@@ -871,12 +871,12 @@
             }
         });
 
-        // Syphon streaming checkbox
-        document.getElementById('enableSyphon').addEventListener('change', (e) => {
+        // WebSocket streaming checkbox
+        document.getElementById('enableWebSocket').addEventListener('change', (e) => {
             if (e.target.checked) {
-                engine.connectSyphon();
+                engine.connectWebSocket();
             } else {
-                engine.disconnectSyphon();
+                engine.disconnectWebSocket();
             }
         });
 

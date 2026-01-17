@@ -1,8 +1,11 @@
 {
   "name": "3d",
   "version": "1.0.0",
-  "main": "syphon-server.js",
+  "main": "websocket-frame-server.js",
   "scripts": {
+    "start": "node websocket-frame-server.js",
+    "dev": "node websocket-frame-server.js",
+    "server": "node websocket-frame-server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
