@@ -53,3 +53,8 @@ jspm_packages/
 # Temporary files
 *.tmp
 *.temp
+processing-syphon-minimal.pde
+processing-syphon-super-simple.pde
+processing-syphon.pde
+v3d_process/processing-syphon-minimal.pde
+v3d_process/v3d_process.pde
