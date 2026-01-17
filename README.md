@@ -7,7 +7,7 @@ A real-time 3D graphics engine with WebSocket streaming for video processing wor
 - **3D Engine**: Interactive 3D model viewer with perspective projection
 - **WebSocket Server**: Streams rendered frames to video processing software
 - **Multiple Outputs**: PNG, WebP, JPEG formats with adjustable quality
-- **Processing Integration**: Native Syphon support for macOS video apps
+- **Real-time Dashboard**: Monitor and control streaming parameters
 
 ## 🚀 Quick Start
 
@@ -33,7 +33,6 @@ Open `3D Projection Engine.html` in your browser.
 ### 5. Use in Video Software
 - **HTTP Endpoint**: `http://localhost:8080/frame.png` (or `.webp`, `.jpeg`)
 - **Dashboard**: `http://localhost:8080` - monitor stats and adjust settings
-- **Processing Syphon**: Use the Processing sketches in `v3d_process/` for native Syphon output
 
 ## 📁 Project Structure
 
@@ -41,11 +40,7 @@ Open `3D Projection Engine.html` in your browser.
 ├── 3D Projection Engine.html     # Main 3D graphics interface
 ├── websocket-frame-server.js     # WebSocket server with dashboard
 ├── package.json                  # Node.js dependencies
-├── v3d_process/                  # Processing sketches for Syphon
-│   ├── v3d_process.pde          # Full-featured Processing sketch
-│   └── processing-syphon-minimal.pde
-├── processing-*.pde             # Additional Processing examples
-└── README.md                    # This file
+└── README.md                     # This file
 ```
 
 ## 🎨 Features
@@ -89,13 +84,6 @@ Open `3D Projection Engine.html` in your browser.
 1. Add "Browser Source"
 2. Set URL to `http://localhost:8080/frame.webp`
 3. Adjust quality settings via dashboard
-
-### VDMX/Resolume
-Use the Processing sketches for native Syphon integration:
-1. Open Processing
-2. Load `v3d_process/v3d_process.pde`
-3. Run the sketch
-4. Look for "Processing Syphon Server" in Syphon input
 
 ### Custom Applications
 ```javascript
@@ -151,11 +139,6 @@ PORT=8080 node websocket-frame-server.js
 - Switch to WebP format for better compression
 - Close other applications using CPU/GPU
 
-### Syphon Not Working
-- Ensure Processing has Syphon library installed
-- Check macOS permissions for screen recording
-- Restart Processing after library installation
-
 ## 🛠️ Development
 
 ### Adding New Models
@@ -185,8 +168,6 @@ app.get('/custom', (req, res) => {
 
 - **Node.js** 14+
 - **Modern Browser** (Chrome, Firefox, Safari)
-- **macOS** (for Syphon/Processing integration)
-- **Processing** 3+ (for Syphon sketches)
 
 ## 📄 License
 
@@ -205,4 +186,3 @@ ISC License - feel free to use in your projects!
 - **Original Inspiration**: [Tsoding's 3D Graphics Tutorial](https://www.youtube.com/watch?v=qjWkNZ0SXfo) - Source Code: [tsoding/formula](https://github.com/tsoding/formula)
 - Built with HTML5 Canvas, WebSockets, and Sharp
 - Inspired by classic 3D graphics and VJ tools
-- Processing Syphon integration for macOS workflows
