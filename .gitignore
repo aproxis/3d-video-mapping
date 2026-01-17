@@ -1,0 +1,55 @@
+# Node modules
+node_modules/
+
+# macOS files
+.DS_Store
+
+# Non-working syphon server variants
+syphon-server-correct.js
+syphon-server-debug.js
+syphon-server-final.js
+syphon-server-nocache.js
+syphon-server-working.js
+syphon-server.js
+syphon-native.js
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp

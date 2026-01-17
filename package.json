@@ -1,0 +1,18 @@
+{
+  "name": "3d",
+  "version": "1.0.0",
+  "main": "syphon-server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "canvas": "^3.2.1",
+    "express": "^5.2.1",
+    "sharp": "^0.34.5",
+    "ws": "^8.19.0"
+  }
+}

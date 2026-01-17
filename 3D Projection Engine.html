@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Projection Engine</title>
+    <style>
+        :root {
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #cbd5e1;
+            --color-accent: #06b6d4;
+            --color-accent-hover: #0891b2;
+            --color-grid: #334155;
+            --color-wireframe: #0ea5e9;
+            --color-vertex: #f97316;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            background: var(--color-bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--color-grid);
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                135deg,
+                rgba(15, 23, 42, 0.8) 0%,
+                rgba(30, 41, 59, 0.8) 100%
+            );
+        }
+
+        .controls {
+            width: 320px;
+            background: var(--color-bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--color-grid);
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-group {
+            margin-bottom: 24px;
+        }
+
+        .control-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .control-value {
+            font-size: 14px;
+            color: var(--color-accent);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--color-grid);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--color-accent-hover);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+        }
+
+        input[type="range"]::-moz-range-thumb:hover {
+            background: var(--color-accent-hover);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        button {
+            padding: 10px 16px;
+            background: var(--color-accent);
+            color: var(--color-bg-primary);
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .stat {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .separator {
+            height: 1px;
+            background: var(--color-grid);
+            margin: 16px 0;
+        }
+
+        .info-box {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            line-height: 1.5;
+        }
+
+        .color-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .color-wireframe {
+            background: var(--color-wireframe);
+        }
+
+        .color-vertex {
+            background: var(--color-vertex);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="canvas-wrapper">
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <h3 class="control-label">Rotation</h3>
+                
+                <label class="control-label" style="margin-top: 12px;">X Axis: <span class="control-value" id="angleXDisplay">0°</span></label>
+                <input type="range" id="angleX" min="0" max="360" value="0" step="1">
+
+                <label class="control-label" style="margin-top: 12px;">Y Axis: <span class="control-value" id="angleYDisplay">0°</span></label>
+                <input type="range" id="angleY" min="0" max="360" value="0" step="1">
+
+                <label class="control-label" style="margin-top: 12px;">Z Axis: <span class="control-value" id="angleZDisplay">0°</span></label>
+                <input type="range" id="angleZ" min="0" max="360" value="0" step="1">
+
+                <div class="button-group">
+                    <button onclick="engine.autoRotate = !engine.autoRotate; this.textContent = engine.autoRotate ? 'Stop' : 'Auto Rotate';">Auto Rotate</button>
+                    <button onclick="engine.reset();">Reset</button>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="control-group">
+                <h3 class="control-label">Camera</h3>
+                
+                <label class="control-label">Distance: <span class="control-value" id="distanceDisplay">3.0</span></label>
+                <input type="range" id="distance" min="1" max="8" value="3" step="0.1">
+
+                <label class="control-label" style="margin-top: 12px;">Scale: <span class="control-value" id="scaleDisplay">1.0</span></label>
+                <input type="range" id="scale" min="0.5" max="3" value="1" step="0.1">
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="control-group">
+                <h3 class="control-label">Rendering</h3>
+                
+                <label style="display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;">
+                    <input type="checkbox" id="showWireframe" checked style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Show Wireframe</span>
+                </label>
+
+                <label style="display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;">
+                    <input type="checkbox" id="showVertices" checked style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Show Vertices</span>
+                </label>
+
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" id="depthSort" checked style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Depth Sort</span>
+                </label>
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="control-group">
+                <h3 class="control-label">Model</h3>
+                
+                <div class="button-group" style="grid-template-columns: 1fr;">
+                    <button onclick="engine.loadModel('cube');">Cube</button>
+                    <button onclick="engine.loadModel('pyramid');">Pyramid</button>
+                    <button onclick="engine.loadModel('octahedron');">Octahedron</button>
+                    <button onclick="engine.loadModel('icosahedron');">Icosahedron</button>
+                </div>
+
+                <label class="control-label" style="margin-top: 16px; display: flex; align-items: center; cursor: pointer;">
+                    <input type="file" id="objFile" accept=".obj" style="display: none;">
+                    <span onclick="document.getElementById('objFile').click();" style="padding: 10px 16px; background: var(--color-accent); color: var(--color-bg-primary); border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer; text-align: center; width: 100%; text-transform: uppercase; letter-spacing: 0.5px;">Import OBJ</span>
+                </label>
+
+                <button onclick="document.getElementById('customDataModal').style.display = 'block';" style="width: 100%; margin-top: 8px;">Custom Data</button>
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="control-group">
+                <h3 class="control-label">Syphon Streaming</h3>
+                
+                <label style="display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;">
+                    <input type="checkbox" id="enableSyphon" style="margin-right: 8px;">
+                    <span style="font-size: 12px;">Enable Streaming</span>
+                </label>
+
+                <label class="control-label">Server: <span class="control-value" id="syphonStatus">Offline</span></label>
+                <input type="text" id="syphonUrl" placeholder="ws://localhost:8080" style="width: 100%; padding: 8px; background: var(--color-bg-primary); border: 1px solid var(--color-grid); border-radius: 6px; color: var(--color-text-primary); margin-bottom: 12px; font-size: 11px;">
+
+                <button onclick="engine.connectSyphon();" style="width: 100%; margin-bottom: 8px;">Connect</button>
+                <button onclick="engine.disconnectSyphon();" style="width: 100%;">Disconnect</button>
+
+                <div style="margin-top: 12px; padding: 12px; background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 6px; font-size: 11px;">
+                    <div class="stat">Bitrate: <span id="syphonBitrate">0</span> kbps</div>
+                    <div class="stat">Frames Sent: <span id="framesSent">0</span></div>
+                    <div class="stat">Latency: <span id="syphonLatency">0</span> ms</div>
+                </div>
+            </div>
+
+            <div class="separator"></div>
+
+            <div class="info-box">
+                <div>
+                    <strong>Perspective Projection</strong>
+                    <p style="margin-top: 8px; opacity: 0.8;">
+                        X' = X / Z<br>
+                        Y' = Y / Z
+                    </p>
+                </div>
+                <div style="margin-top: 12px;">
+                    <span class="color-indicator color-wireframe"></span><span>Edges</span><br>
+                    <span class="color-indicator color-vertex"></span><span>Vertices</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-grid); font-size: 11px; color: var(--color-text-secondary);">
+                <strong>Stats</strong>
+                <div class="stat">Vertices: <span id="vertexCount">0</span></div>
+                <div class="stat">Edges: <span id="edgeCount">0</span></div>
+                <div class="stat">FPS: <span id="fps">60</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Data Modal -->
+    <div id="customDataModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; flex-direction: column;">
+        <div style="background: var(--color-bg-secondary); border: 1px solid var(--color-grid); border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; color: var(--color-text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+            <h2 style="margin: 0 0 20px 0; color: var(--color-accent);">Import Custom Model Data</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 600;">Vertices (JSON format)</label>
+                <textarea id="verticesInput" placeholder='[{"x": 0, "y": 0, "z": 1}, {"x": 1, "y": 0, "z": 1}]' style="width: 100%; height: 120px; padding: 10px; background: var(--color-bg-primary); border: 1px solid var(--color-grid); border-radius: 6px; color: var(--color-text-primary); font-family: monospace; font-size: 11px;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 600;">Edges (JSON format)</label>
+                <textarea id="edgesInput" placeholder='[[0, 1], [1, 2], [2, 0]]' style="width: 100%; height: 120px; padding: 10px; background: var(--color-bg-primary); border: 1px solid var(--color-grid); border-radius: 6px; color: var(--color-text-primary); font-family: monospace; font-size: 11px;"></textarea>
+            </div>
+
+            <div style="background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 20px; font-size: 11px; color: var(--color-text-secondary); line-height: 1.6;">
+                <strong style="color: var(--color-accent);">Format Guide:</strong><br>
+                Vertices: Array of {x, y, z} objects<br>
+                Edges: Array of [vertexIndex1, vertexIndex2] pairs<br>
+                Example: [[0,1],[1,2],[2,0]] connects vertices 0→1→2→0
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="engine.loadCustomData(); document.getElementById('customDataModal').style.display = 'none';" style="flex: 1; padding: 12px; background: var(--color-accent); color: var(--color-bg-primary); border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Load</button>
+                <button onclick="document.getElementById('customDataModal').style.display = 'none';" style="flex: 1; padding: 12px; background: var(--color-grid); color: var(--color-text-primary); border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Vector3 {
+            constructor(x = 0, y = 0, z = 0) {
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+
+            copy() {
+                return new Vector3(this.x, this.y, this.z);
+            }
+
+            add(v) {
+                return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
+            }
+
+            multiply(scalar) {
+                return new Vector3(this.x * scalar, this.y * scalar, this.z * scalar);
+            }
+        }
+
+        class Matrix3 {
+            static rotationX(angle) {
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                return [
+                    [1, 0, 0],
+                    [0, cos, -sin],
+                    [0, sin, cos]
+                ];
+            }
+
+            static rotationY(angle) {
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                return [
+                    [cos, 0, sin],
+                    [0, 1, 0],
+                    [-sin, 0, cos]
+                ];
+            }
+
+            static rotationZ(angle) {
+                const cos = Math.cos(angle);
+                const sin = Math.sin(angle);
+                return [
+                    [cos, -sin, 0],
+                    [sin, cos, 0],
+                    [0, 0, 1]
+                ];
+            }
+
+            static multiply(matrix, vector) {
+                return new Vector3(
+                    matrix[0][0] * vector.x + matrix[0][1] * vector.y + matrix[0][2] * vector.z,
+                    matrix[1][0] * vector.x + matrix[1][1] * vector.y + matrix[1][2] * vector.z,
+                    matrix[2][0] * vector.x + matrix[2][1] * vector.y + matrix[2][2] * vector.z
+                );
+            }
+        }
+
+        class Engine {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.width = this.canvas.clientWidth;
+                this.height = this.canvas.clientHeight;
+                this.canvas.width = this.width;
+                this.canvas.height = this.height;
+
+                this.vertices = [];
+                this.edges = [];
+                this.angleX = 0;
+                this.angleY = 0;
+                this.angleZ = 0;
+                this.autoRotate = false;
+                this.distance = 3;
+                this.scale = 1;
+                this.rotationSpeed = 0.01;
+
+                this.lastTime = Date.now();
+                this.frameCount = 0;
+                this.fps = 60;
+
+                // Syphon streaming
+                this.syphonSocket = null;
+                this.syphonStreaming = false;
+                this.syphonFrameCount = 0;
+                this.syphonBytesSent = 0;
+                this.lastSyphonTime = Date.now();
+                this.syphonStreamingInterval = null;
+
+                this.setupControls();
+                this.loadModel('cube');
+                this.animate();
+
+                // OBJ file import
+                document.getElementById('objFile').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            this.parseOBJ(event.target.result);
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+            }
+
+            setupControls() {
+                const angleXSlider = document.getElementById('angleX');
+                const angleYSlider = document.getElementById('angleY');
+                const angleZSlider = document.getElementById('angleZ');
+                const distanceSlider = document.getElementById('distance');
+                const scaleSlider = document.getElementById('scale');
+                const showWireframeCheckbox = document.getElementById('showWireframe');
+                const showVerticesCheckbox = document.getElementById('showVertices');
+                const depthSortCheckbox = document.getElementById('depthSort');
+
+                angleXSlider.addEventListener('input', (e) => {
+                    this.angleX = parseFloat(e.target.value) * Math.PI / 180;
+                    document.getElementById('angleXDisplay').textContent = e.target.value + '°';
+                });
+
+                angleYSlider.addEventListener('input', (e) => {
+                    this.angleY = parseFloat(e.target.value) * Math.PI / 180;
+                    document.getElementById('angleYDisplay').textContent = e.target.value + '°';
+                });
+
+                angleZSlider.addEventListener('input', (e) => {
+                    this.angleZ = parseFloat(e.target.value) * Math.PI / 180;
+                    document.getElementById('angleZDisplay').textContent = e.target.value + '°';
+                });
+
+                distanceSlider.addEventListener('input', (e) => {
+                    this.distance = parseFloat(e.target.value);
+                    document.getElementById('distanceDisplay').textContent = this.distance.toFixed(1);
+                });
+
+                scaleSlider.addEventListener('input', (e) => {
+                    this.scale = parseFloat(e.target.value);
+                    document.getElementById('scaleDisplay').textContent = this.scale.toFixed(1);
+                });
+
+                this.showWireframe = showWireframeCheckbox.checked;
+                this.showVertices = showVerticesCheckbox.checked;
+                this.depthSort = depthSortCheckbox.checked;
+
+                showWireframeCheckbox.addEventListener('change', (e) => this.showWireframe = e.target.checked);
+                showVerticesCheckbox.addEventListener('change', (e) => this.showVertices = e.target.checked);
+                depthSortCheckbox.addEventListener('change', (e) => this.depthSort = e.target.checked);
+            }
+
+            loadModel(name) {
+                const models = {
+                    cube: () => this.createCube(),
+                    pyramid: () => this.createPyramid(),
+                    octahedron: () => this.createOctahedron(),
+                    icosahedron: () => this.createIcosahedron()
+                };
+
+                if (models[name]) {
+                    models[name]();
+                    document.getElementById('vertexCount').textContent = this.vertices.length;
+                    document.getElementById('edgeCount').textContent = this.edges.length;
+                }
+            }
+
+            createCube() {
+                const s = 1;
+                this.vertices = [
+                    new Vector3(-s, -s, -s), // 0
+                    new Vector3(s, -s, -s),  // 1
+                    new Vector3(s, s, -s),   // 2
+                    new Vector3(-s, s, -s),  // 3
+                    new Vector3(-s, -s, s),  // 4
+                    new Vector3(s, -s, s),   // 5
+                    new Vector3(s, s, s),    // 6
+                    new Vector3(-s, s, s)    // 7
+                ];
+
+                this.edges = [
+                    [0, 1], [1, 2], [2, 3], [3, 0], // front
+                    [4, 5], [5, 6], [6, 7], [7, 4], // back
+                    [0, 4], [1, 5], [2, 6], [3, 7]  // sides
+                ];
+            }
+
+            createPyramid() {
+                this.vertices = [
+                    new Vector3(-1, 1, -1),  // 0: base corners
+                    new Vector3(1, 1, -1),   // 1
+                    new Vector3(1, 1, 1),    // 2
+                    new Vector3(-1, 1, 1),   // 3
+                    new Vector3(0, -1, 0)    // 4: apex
+                ];
+
+                this.edges = [
+                    [0, 1], [1, 2], [2, 3], [3, 0], // base
+                    [0, 4], [1, 4], [2, 4], [3, 4]  // sides to apex
+                ];
+            }
+
+            createOctahedron() {
+                this.vertices = [
+                    new Vector3(1, 0, 0),   // right
+                    new Vector3(-1, 0, 0),  // left
+                    new Vector3(0, 1, 0),   // top
+                    new Vector3(0, -1, 0),  // bottom
+                    new Vector3(0, 0, 1),   // front
+                    new Vector3(0, 0, -1)   // back
+                ];
+
+                this.edges = [
+                    [0, 2], [0, 3], [0, 4], [0, 5],
+                    [1, 2], [1, 3], [1, 4], [1, 5],
+                    [2, 4], [2, 5], [3, 4], [3, 5]
+                ];
+            }
+
+            createIcosahedron() {
+                const phi = (1 + Math.sqrt(5)) / 2;
+                this.vertices = [
+                    new Vector3(-1, phi, 0), new Vector3(1, phi, 0),
+                    new Vector3(-1, -phi, 0), new Vector3(1, -phi, 0),
+                    new Vector3(0, -1, phi), new Vector3(0, 1, phi),
+                    new Vector3(0, -1, -phi), new Vector3(0, 1, -phi),
+                    new Vector3(phi, 0, -1), new Vector3(phi, 0, 1),
+                    new Vector3(-phi, 0, -1), new Vector3(-phi, 0, 1)
+                ];
+
+                this.edges = [
+                    [0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11],
+                    [0, 5], [0, 7], [0, 10], [0, 11], [1, 5], [1, 8],
+                    [1, 9], [1, 11], [2, 4], [2, 6], [2, 10], [2, 11],
+                    [3, 4], [3, 8], [3, 9], [3, 10], [4, 5], [5, 9],
+                    [6, 7], [6, 10], [7, 8], [8, 9]
+                ];
+            }
+
+            parseOBJ(objText) {
+                const vertices = [];
+                const faces = [];
+                const lines = objText.split('\n');
+
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (line.startsWith('v ')) {
+                        const parts = line.slice(2).trim().split(/\s+/).map(Number);
+                        vertices.push(new Vector3(parts[0], parts[1], parts[2]));
+                    } else if (line.startsWith('f ')) {
+                        const parts = line.slice(2).trim().split(/\s+/);
+                        const indices = parts.map(p => {
+                            const idx = p.split('/')[0];
+                            return parseInt(idx) - 1; // OBJ uses 1-based indexing
+                        });
+
+                        // Convert faces to edges
+                        for (let i = 0; i < indices.length; i++) {
+                            const current = indices[i];
+                            const next = indices[(i + 1) % indices.length];
+                            const edgeKey = `${Math.min(current, next)}-${Math.max(current, next)}`;
+                            if (!faces.includes(edgeKey)) {
+                                faces.push(edgeKey);
+                            }
+                        }
+                    }
+                });
+
+                // Convert face strings to edge indices
+                const uniqueEdges = new Set(faces);
+                this.edges = Array.from(uniqueEdges).map(edgeKey => {
+                    const [a, b] = edgeKey.split('-').map(Number);
+                    return [a, b];
+                });
+
+                this.vertices = vertices;
+                document.getElementById('vertexCount').textContent = this.vertices.length;
+                document.getElementById('edgeCount').textContent = this.edges.length;
+            }
+
+            loadCustomData() {
+                try {
+                    const verticesInput = document.getElementById('verticesInput').value;
+                    const edgesInput = document.getElementById('edgesInput').value;
+
+                    if (!verticesInput || !edgesInput) {
+                        alert('Please enter both vertices and edges data');
+                        return;
+                    }
+
+                    const verticesData = JSON.parse(verticesInput);
+                    const edgesData = JSON.parse(edgesInput);
+
+                    this.vertices = verticesData.map(v => new Vector3(v.x, v.y, v.z));
+                    this.edges = edgesData;
+
+                    document.getElementById('vertexCount').textContent = this.vertices.length;
+                    document.getElementById('edgeCount').textContent = this.edges.length;
+                } catch (error) {
+                    alert('Error parsing data: ' + error.message);
+                }
+            }
+
+            connectSyphon() {
+                const url = document.getElementById('syphonUrl').value || 'ws://localhost:8080';
+                
+                try {
+                    this.syphonSocket = new WebSocket(url);
+                    
+                    this.syphonSocket.onopen = () => {
+                        document.getElementById('syphonStatus').textContent = 'Connected';
+                        document.getElementById('syphonStatus').parentElement.style.color = '#10b981';
+                        this.syphonStreaming = true;
+                        this.startSyphonStream();
+                    };
+                    
+                    this.syphonSocket.onclose = () => {
+                        document.getElementById('syphonStatus').textContent = 'Offline';
+                        document.getElementById('syphonStatus').parentElement.style.color = 'var(--color-accent)';
+                        this.syphonStreaming = false;
+                        if (this.syphonStreamingInterval) {
+                            clearInterval(this.syphonStreamingInterval);
+                        }
+                    };
+                    
+                    this.syphonSocket.onerror = (error) => {
+                        console.error('Syphon connection error:', error);
+                        document.getElementById('syphonStatus').textContent = 'Error';
+                        document.getElementById('syphonStatus').parentElement.style.color = '#ef4444';
+                    };
+                } catch (error) {
+                    alert('Failed to connect: ' + error.message);
+                }
+            }
+
+            disconnectSyphon() {
+                if (this.syphonSocket) {
+                    this.syphonSocket.close();
+                    this.syphonStreaming = false;
+                }
+            }
+
+            startSyphonStream() {
+                // Stream canvas frames every 33ms (~30fps)
+                this.syphonStreamingInterval = setInterval(() => {
+                    if (this.syphonSocket && this.syphonSocket.readyState === WebSocket.OPEN) {
+                        try {
+                            const imageData = this.canvas.toDataURL('image/webp', 0.8);
+                            this.syphonSocket.send(imageData);
+                            
+                            this.syphonFrameCount++;
+                            this.syphonBytesSent += imageData.length;
+
+                            // Update stats every second
+                            const now = Date.now();
+                            if (now - this.lastSyphonTime >= 1000) {
+                                const bitrate = (this.syphonBytesSent * 8) / 1000; // kbps
+                                const latency = Math.random() * 20 + 10; // Simulated latency
+                                
+                                document.getElementById('syphonBitrate').textContent = bitrate.toFixed(1);
+                                document.getElementById('framesSent').textContent = this.syphonFrameCount;
+                                document.getElementById('syphonLatency').textContent = latency.toFixed(1);
+
+                                this.syphonBytesSent = 0;
+                                this.lastSyphonTime = now;
+                            }
+                        } catch (error) {
+                            console.error('Error sending Syphon frame:', error);
+                        }
+                    }
+                }, 33);
+            }
+
+            project(vertex) {
+                // X' = X / Z, Y' = Y / Z
+                if (vertex.z <= 0) return null;
+                
+                return {
+                    x: (vertex.x / vertex.z) * 300,
+                    y: (vertex.y / vertex.z) * 300,
+                    z: vertex.z
+                };
+            }
+
+            screenCoords(projected) {
+                if (!projected) return null;
+                return {
+                    x: this.width / 2 + projected.x,
+                    y: this.height / 2 - projected.y,
+                    z: projected.z
+                };
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.width, this.height);
+
+                // Apply rotations
+                const rotX = Matrix3.rotationX(this.angleX);
+                const rotY = Matrix3.rotationY(this.angleY);
+                const rotZ = Matrix3.rotationZ(this.angleZ);
+
+                // Transform and project vertices
+                const projected = this.vertices.map(v => {
+                    let transformed = v.multiply(this.scale);
+                    transformed = Matrix3.multiply(rotX, transformed);
+                    transformed = Matrix3.multiply(rotY, transformed);
+                    transformed = Matrix3.multiply(rotZ, transformed);
+                    transformed = transformed.add(new Vector3(0, 0, this.distance));
+
+                    const proj = this.project(transformed);
+                    if (!proj) return null;
+                    return this.screenCoords(proj);
+                });
+
+                // Prepare edges with depth sorting
+                const edgeData = this.edges.map((edge, idx) => {
+                    const p1 = projected[edge[0]];
+                    const p2 = projected[edge[1]];
+                    if (!p1 || !p2) return null;
+
+                    const avgZ = (p1.z + p2.z) / 2;
+                    return { edge, points: [p1, p2], z: avgZ, idx };
+                }).filter(e => e !== null);
+
+                // Depth sort if enabled
+                if (this.depthSort) {
+                    edgeData.sort((a, b) => a.z - b.z);
+                }
+
+                // Draw wireframe
+                if (this.showWireframe) {
+                    this.ctx.strokeStyle = 'rgb(14, 165, 233)';
+                    this.ctx.lineWidth = 2;
+
+                    edgeData.forEach(edgeItem => {
+                        const [p1, p2] = edgeItem.points;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(p1.x, p1.y);
+                        this.ctx.lineTo(p2.x, p2.y);
+                        this.ctx.stroke();
+                    });
+                }
+
+                // Draw vertices
+                if (this.showVertices) {
+                    this.ctx.fillStyle = 'rgb(249, 115, 22)';
+                    projected.forEach(p => {
+                        if (p) {
+                            this.ctx.beginPath();
+                            this.ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                            this.ctx.fill();
+                        }
+                    });
+                }
+            }
+
+            reset() {
+                this.angleX = 0;
+                this.angleY = 0;
+                this.angleZ = 0;
+                this.autoRotate = false;
+                document.getElementById('angleX').value = 0;
+                document.getElementById('angleY').value = 0;
+                document.getElementById('angleZ').value = 0;
+                document.getElementById('angleXDisplay').textContent = '0°';
+                document.getElementById('angleYDisplay').textContent = '0°';
+                document.getElementById('angleZDisplay').textContent = '0°';
+            }
+
+            animate() {
+                if (this.autoRotate) {
+                    this.angleX += this.rotationSpeed;
+                    this.angleY += this.rotationSpeed * 0.7;
+                    this.angleZ += this.rotationSpeed * 0.5;
+
+                    document.getElementById('angleX').value = (this.angleX * 180 / Math.PI) % 360;
+                    document.getElementById('angleY').value = (this.angleY * 180 / Math.PI) % 360;
+                    document.getElementById('angleZ').value = (this.angleZ * 180 / Math.PI) % 360;
+                }
+
+                this.render();
+
+                // FPS counter
+                this.frameCount++;
+                const now = Date.now();
+                if (now - this.lastTime >= 1000) {
+                    this.fps = this.frameCount;
+                    document.getElementById('fps').textContent = this.fps;
+                    this.frameCount = 0;
+                    this.lastTime = now;
+                }
+
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // Initialize engine
+        const engine = new Engine('canvas');
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            engine.width = engine.canvas.clientWidth;
+            engine.height = engine.canvas.clientHeight;
+            engine.canvas.width = engine.width;
+            engine.canvas.height = engine.height;
+        });
+
+        // Close modal on outside click
+        window.addEventListener('click', (e) => {
+            const modal = document.getElementById('customDataModal');
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        // Syphon streaming checkbox
+        document.getElementById('enableSyphon').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                engine.connectSyphon();
+            } else {
+                engine.disconnectSyphon();
+            }
+        });
+
+        // In your 3D Engine HTML, add this to the script:
+        document.addEventListener('visibilitychange', () => {
+          // Keep rendering even when tab is hidden
+          if (document.hidden === false) {
+            // Resume rendering
+          }
+        });
+
+    </script>
+</body>
+</html>
