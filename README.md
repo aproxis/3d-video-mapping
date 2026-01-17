@@ -202,6 +202,7 @@ ISC License - feel free to use in your projects!
 
 ## 🙏 Acknowledgments
 
+- **Original Inspiration**: [Tsoding's 3D Graphics Tutorial](https://www.youtube.com/watch?v=qjWkNZ0SXfo) - Source Code: [tsoding/formula](https://github.com/tsoding/formula)
 - Built with HTML5 Canvas, WebSockets, and Sharp
 - Inspired by classic 3D graphics and VJ tools
 - Processing Syphon integration for macOS workflows
